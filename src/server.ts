@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import staticIndexablePages from "./lib/indexable-pages.json";
 import { clinic, doctors, posts, services } from "./lib/site";
 
 type ServerEntry = {
@@ -48,7 +49,7 @@ type Booking = {
 };
 
 const SITE_ORIGIN = "https://weldentdental.com";
-const BUILD_ID = "seo-audit-2026-09-09";
+const BUILD_ID = "seo-indexing-2026-09-17";
 const maximumBookingBodyLength = 16_384;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -56,27 +57,9 @@ let serverEntryPromise: Promise<ServerEntry> | undefined;
 
 type IndexablePage = { path: string; lastModified: string };
 
-const staticIndexablePages: IndexablePage[] = [
-  { path: "/", lastModified: "2026-09-09" },
-  { path: "/about", lastModified: "2026-09-09" },
-  { path: "/book", lastModified: "2026-09-08" },
-  { path: "/faq", lastModified: "2026-09-08" },
-  { path: "/gallery", lastModified: "2026-09-08" },
-  { path: "/testimonials", lastModified: "2026-09-08" },
-  { path: "/doctors", lastModified: "2026-09-09" },
-];
-
-function latestDate(dates: string[]) {
-  return [...dates].sort().at(-1) ?? "2026-09-08";
-}
-
 function indexablePages(): IndexablePage[] {
   return [
-    ...staticIndexablePages,
-    {
-      path: "/services",
-      lastModified: latestDate(services.map((service) => service.dateModified)),
-    },
+    ...(staticIndexablePages as IndexablePage[]),
     ...services.map((service) => ({
       path: `/services/${service.slug}`,
       lastModified: service.dateModified,
@@ -85,7 +68,6 @@ function indexablePages(): IndexablePage[] {
       path: `/doctors/${doctor.slug}`,
       lastModified: "2026-09-09",
     })),
-    { path: "/blog", lastModified: latestDate(posts.map((post) => post.dateModified)) },
     ...posts.map((post) => ({
       path: `/blog/${post.slug}`,
       lastModified: post.dateModified,
@@ -224,6 +206,11 @@ async function bookAppointment(request: Request, env: CloudflareEnv) {
 
 function getCloudflareEnv(request: Request, directEnv?: CloudflareEnv) {
   return directEnv ?? (request as CloudflareRequest).runtime?.cloudflare?.env;
+}
+
+function canonicalPathname(pathname: string) {
+  if (pathname === "/") return pathname;
+  return pathname.replace(/\/+$/, "") || "/";
 }
 
 function seoResource(request: Request, indexNowKey?: string) {
@@ -409,11 +396,18 @@ export default {
       const isCanonicalHostname =
         requestUrl.hostname === "weldentdental.com" ||
         requestUrl.hostname === "www.weldentdental.com";
-      if (requestUrl.protocol !== "https:" && isCanonicalHostname) {
-        return Response.redirect(`${SITE_ORIGIN}${requestUrl.pathname}${requestUrl.search}`, 301);
+      if (
+        isCanonicalHostname &&
+        (requestUrl.protocol !== "https:" || requestUrl.hostname === "www.weldentdental.com")
+      ) {
+        return Response.redirect(
+          `${SITE_ORIGIN}${canonicalPathname(requestUrl.pathname)}${requestUrl.search}`,
+          301,
+        );
       }
-      if (requestUrl.hostname === "www.weldentdental.com") {
-        return Response.redirect(`${SITE_ORIGIN}${requestUrl.pathname}${requestUrl.search}`, 301);
+      if (isCanonicalHostname && requestUrl.pathname !== "/" && requestUrl.pathname.endsWith("/")) {
+        const normalizedPath = canonicalPathname(requestUrl.pathname);
+        return Response.redirect(`${SITE_ORIGIN}${normalizedPath}${requestUrl.search}`, 301);
       }
       if (requestUrl.pathname === "/__health") {
         return jsonResponse({ status: "ok", build: BUILD_ID, canonicalOrigin: SITE_ORIGIN });
@@ -422,10 +416,13 @@ export default {
         return Response.redirect(`${SITE_ORIGIN}/book${requestUrl.search}`, 301);
       }
       if (requestUrl.pathname === "/booking") {
-        return Response.redirect(`${SITE_ORIGIN}/book`, 301);
+        return Response.redirect(`${SITE_ORIGIN}/book${requestUrl.search}`, 301);
       }
       if (requestUrl.pathname === "/blog/aligners-vs-braces") {
-        return Response.redirect(`${SITE_ORIGIN}/blog/braces-treatment-guide`, 301);
+        return Response.redirect(
+          `${SITE_ORIGIN}/blog/braces-treatment-guide${requestUrl.search}`,
+          301,
+        );
       }
       const serviceRedirects: Record<string, string> = {
         "/services/emergency-dentist": "/services/check-ups",

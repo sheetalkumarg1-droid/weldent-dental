@@ -20,19 +20,9 @@ function between(source, start, end) {
   return source.slice(startIndex, endIndex);
 }
 
-const staticRoutes = [
-  ["/", "2026-09-10"],
-  ["/about", "2026-09-09"],
-  ["/book", "2026-09-09"],
-  ["/faq", "2026-09-09"],
-  ["/gallery", "2026-09-10"],
-  ["/testimonials", "2026-09-08"],
-  ["/services", "2026-09-10"],
-  ["/doctors", "2026-09-09"],
-  ["/blog", "2026-09-08"],
-  ["/privacy", "2026-09-08"],
-  ["/terms", "2026-09-08"],
-];
+const staticRoutes = JSON.parse(read("src/lib/indexable-pages.json")).map(
+  ({ path: route, lastModified }) => [route, lastModified],
+);
 
 const servicesSource = read("src/lib/services.ts");
 const serviceDate = servicesSource.match(/const dateModified = "([^"]+)"/)?.[1];
