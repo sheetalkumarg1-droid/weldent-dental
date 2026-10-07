@@ -3,15 +3,15 @@ export { clinic, nav } from "@/lib/site-core";
 import { responsiveImageSet } from "@/lib/site-core";
 
 export const photos = {
-  front: "/images/clinic-front-480.webp",
+  front: "/images/clinic-front.webp",
   operatory: "/images/clinic-operatory.webp",
 };
 
 export const heroImages = [
   {
-    src: "/images/clinic-front-480.webp",
+    src: "/images/clinic-front.webp",
     srcSet:
-      "/images/clinic-front-480.webp 480w",
+      "/images/clinic-front.webp 1200w",
     alt: "Entrance of Weldent Multispeciality Dental Clinic in Kalena Agrahara, Bengaluru",
   },
   {

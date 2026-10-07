@@ -213,7 +213,7 @@ function RootShell({ children }: { children: ReactNode }) {
                     "Neighbourhood dental clinic in Kalena Agrahara near Bannerghatta Road, Bengaluru.",
                   url: SITE_URL,
                   image: [
-                    absoluteUrl("/images/clinic-front-480.webp"),
+                    absoluteUrl("/images/clinic-front.webp"),
                     absoluteUrl("/images/hero/clinic-2.webp"),
                     absoluteUrl("/images/hero/clinic-3.webp"),
                     absoluteUrl("/images/hero/clinic-4.webp"),
